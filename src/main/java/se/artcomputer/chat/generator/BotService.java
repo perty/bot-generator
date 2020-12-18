@@ -17,7 +17,7 @@ public class BotService {
 
     public void spawnBort(String botName) {
         LOG.info("Spawn bot {}", botName);
-        bots.put(botName, new Bot(botName).start());
+        bots.put(botName, new Bot(botName).startMeUp());
     }
 
     public List<BotDto> getBots() {
