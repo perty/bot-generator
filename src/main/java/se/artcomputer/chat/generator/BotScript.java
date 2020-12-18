@@ -8,12 +8,12 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class BotScript {
     private static final Logger LOG = LoggerFactory.getLogger(BotScript.class);
+    private static final String BEARER = "Bearer ";
 
     private final WebClient webClient;
     private String sessionId;
@@ -33,13 +33,11 @@ public class BotScript {
                 .builder()
                 .baseUrl("http://localhost:5000/api/v2")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .defaultUriVariables(Collections.singletonMap("url", "http://localhost:8080"))
                 .build();
     }
 
     public void doNext() {
         LOG.info("Do next {}", nextMsg);
-
         nextMsg =  switch (nextMsg) {
             case INITIAL -> login();
             case LOGGED_IN -> fetchChats();
@@ -51,6 +49,14 @@ public class BotScript {
 
     private Msg postMessage() {
         LOG.info("Post message in {} ", selectedChat.getCreatorName());
+        webClient
+                .post()
+                .uri("/chats/" + selectedChat.getChatId())
+                .header(HttpHeaders.AUTHORIZATION, BEARER + this.sessionId)
+                .bodyValue(new PostChatMessageRequest("lsome chat message"))
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
         return Msg.MESSAGE_POSTED;
     }
 
@@ -72,7 +78,7 @@ public class BotScript {
         List<ChatMessageDTO> list = webClient
                 .get()
                 .uri("/chats/" + chat.getChatId())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
+                .header(HttpHeaders.AUTHORIZATION, BEARER + this.sessionId)
                 .retrieve()
                 .bodyToMono(typeRef)
                 .block();
@@ -94,7 +100,7 @@ public class BotScript {
         chats = webClient
                 .get()
                 .uri("/chats")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
+                .header(HttpHeaders.AUTHORIZATION, BEARER + this.sessionId)
                 .retrieve()
                 .bodyToMono(typeRef)
                 .block();
